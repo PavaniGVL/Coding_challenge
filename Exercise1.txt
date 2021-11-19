@@ -1,0 +1,25 @@
+/*EXERCISE1*/
+
+%macro ReadFiles(directory);
+	%local fildir rc dir_open filnm i;
+	%let rc=%sysfunc(filename(fildir,&directory));
+	%let dir_open=%sysfunc(dopen(&fildir));
+	
+	%if &dir_open eq 0 %then %do; 
+    	%put Directory &directory cannot be open or does not exist;
+    	%return;
+ 	%end;
+  
+  	%do i = 1 to %sysfunc(dnum(&dir_open)); 
+  		%let filnm=%qsysfunc(dread(&dir_open,&i));
+  		%put &directory\&filnm;
+  		output;
+	%end;
+  		
+	%let rc=%sysfunc(dclose(&dir_open));
+	%let rc=%sysfunc(filename(fildir));
+%mend ReadFiles;			
+		
+%ReadFiles(E:\Pavani_test);
+
+

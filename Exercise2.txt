@@ -1,0 +1,60 @@
+/*EXERCISE2*/
+
+/* Macro to import files to sas dataset dsn*/
+
+%macro ImportFile(dsn,fildir,filnm,filext);
+
+	%if %sysfunc(exist(&dsn))=0 %then %do;
+
+/* Create a table */
+		proc sql;
+		create table &dsn 
+				( File_Name char(1000) format=$1000. 
+				);
+		quit;
+
+   %end;
+
+/*Open the direcry to read the files*/
+	%local fildir rc dir_open filnm i;
+	%let rc=%sysfunc(filename(fildir,&directory));
+	%let dir_open=%sysfunc(dopen(&fildir));
+	
+	%if &dir_open eq 0 %then %do; 
+    	%put Directory &directory cannot be open or does not exist;
+    	%return;
+ 	%end;
+
+/*Iterate through all the files in the directory*/
+  
+  	%do i = 1 to %sysfunc(dnum(&dir_open)); 
+  		%let filnm=%qsysfunc(dread(&dir_open,&i));
+  		%put &directory\&filnm;
+  		output;
+	
+
+/* Write file names to output dataset dsn */  		
+	insert into &dsn
+		set File_Name= "&directory/&filnm";
+	quit;
+
+	%end;
+
+/*Close directory */
+	%let rc=%sysfunc(dclose(&dir_open));
+	%let rc=%sysfunc(filename(fildir));
+
+/* Load your files to SAS Datasets */
+	data _null_;
+	set test;
+	call execute( cat( "proc import datafile='",trim(File_Name),"' out= ",scan(scan(File_Name,-1,'/'),1,'.') ," dbms=&filext;run;"));
+	run;
+
+%mend ImportFile;	
+		
+
+/*Call Macro to import the CSV/XLS files as required*/
+		
+%ImportFile(pavani.test1,E:\Pavani_test,csv);
+%ImportFile(pavani.test2,E:\Pavani_test,xls);
+
