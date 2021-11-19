@@ -1,25 +1,36 @@
 /*EXERCISE1*/
 
+/*Define Macro to read all filenames from a directory*/
+
 %macro ReadFiles(directory);
 	%local fildir rc dir_open filnm i;
 	%let rc=%sysfunc(filename(fildir,&directory));
+
+/*OPEN directory.If successful gives value of 1 else gives value 0*/*/
+
 	%let dir_open=%sysfunc(dopen(&fildir));
 	
 	%if &dir_open eq 0 %then %do; 
     	%put Directory &directory cannot be open or does not exist;
     	%return;
  	%end;
-  
+
+/*Iterate through all the files in the directory to read the filenames*/
+
   	%do i = 1 to %sysfunc(dnum(&dir_open)); 
   		%let filnm=%qsysfunc(dread(&dir_open,&i));
   		%put &directory\&filnm;
   		output;
 	%end;
   		
+/*Close the directory*/
 	%let rc=%sysfunc(dclose(&dir_open));
 	%let rc=%sysfunc(filename(fildir));
+
 %mend ReadFiles;			
 		
+/*Call the Macro with directory*/
+
 %ReadFiles(E:\Pavani_test);
 
 
