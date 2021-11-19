@@ -20,7 +20,7 @@
   	%do i = 1 to %sysfunc(dnum(&dir_open)); 
   		%let filnm=%qsysfunc(dread(&dir_open,&i));
   		%put &directory\&filnm;
-  		output;
+  		
 	%end;
   		
 /*Close the directory*/
