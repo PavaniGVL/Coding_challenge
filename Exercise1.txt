@@ -1,36 +1,21 @@
-/*EXERCISE1*/
+/*Exercise1- Read all file names from directory and place in a specified SAS library*/
 
-/*Define Macro to read all filenames from a directory*/
+libname outp '/home/u38072055/out1';               /*Output directory*/
 
-%macro ReadFiles(directory);
-	%local fildir rc dir_open filnm i;
-	%let rc=%sysfunc(filename(fildir,&directory));
+%macro ReadFiles(directory);                       /*Define Macro - ReadFiles*/
+data outp.file_list(keep=fname);  
+	rc=filename("mydir","&directory");            /*Input directory*/
+	did=dopen("mydir");                            /*Directory ID*/
+	if did>0 then
+		do i=1 to dnum(did);                       /*Loops from 1 to the number of items in directory*/
+			fname=dread(did,i);                    /* Reads the name of the directory member*/
+			output;
+		end;
+	rc=dclose(did);                                /*Closes the directory*/
+run;
 
-/*OPEN directory.If successful gives value of 1 else gives value 0*/*/
+proc print data=outp.file_list;                    /* Prints SAS dataset to directory OUTP*/
+run;
+%mend ReadFiles;
 
-	%let dir_open=%sysfunc(dopen(&fildir));
-	
-	%if &dir_open eq 0 %then %do; 
-    	%put Directory &directory cannot be open or does not exist;
-    	%return;
- 	%end;
-
-/*Iterate through all the files in the directory to read the filenames*/
-
-  	%do i = 1 to %sysfunc(dnum(&dir_open)); 
-  		%let filnm=%qsysfunc(dread(&dir_open,&i));
-  		%put &directory\&filnm;
-  		
-	%end;
-  		
-/*Close the directory*/
-	%let rc=%sysfunc(dclose(&dir_open));
-	%let rc=%sysfunc(filename(fildir));
-
-%mend ReadFiles;			
-		
-/*Call the Macro with directory*/
-
-%ReadFiles(E:\Pavani_test);
-
-
+%ReadFiles(/home/u38072055/Pavani);                /* Call the Macro with directory path*/
