@@ -1,54 +1,32 @@
-/*EXERCISE3*/
+libname outp '/home/u38072055/out1';               /*Output directory*/
 
-%macro ImportFile(dsn,fildir,filnm,filext);
+%macro ReadFiles(directory);                  /*Define Macro - ReadFiles*/
+data outp.file_list(keep=fname);  
+	rc=filename("mydir","&directory");            /*Input directory*/
+	did=dopen("mydir");                            /*Directory ID*/
+	if did>0 then
+		do i=1 to dnum(did);                       /*Loops from 1 to the number of items in directory*/
+			fname=dread(did,i);                  /* Reads the name of the directory member*/
+			put "fname = " fname;
+			output;
+		end;
+	rc=dclose(did);                                /*Closes the directory*/
+run;
 
-	%if %sysfunc(exist(&dsn))=0 %then %do;
+proc print data=outp.file_list; 
+run;
 
-/* Create a table */
-		proc sql;
-		create table &dsn 
-				( File_Name char(1000) format=$1000. 
-				);
-		quit;
+%ImportFile(&directory,&fname);
+%mend ReadFiles;
 
-   %end;
-
-/*Iterate through all files in directory to be imported*/
-
-%do i = 1 to %sysfunc(dnum(&dir_open)); 
-
-/*Call Macro 'ReadFiles' */
-
-%ReadFiles(E:\Pavani_test);
-	
-
-/* Write file names to output dataset dsn */  		
-	insert into &dsn
-		set File_Name= "&directory/&filnm";
-	quit;
-
-	%end;
-
-%end;
-
-/*Close directory */
-	%let rc=%sysfunc(dclose(&dir_open));
-	%let rc=%sysfunc(filename(fildir));
-
-/* Load your files to SAS Datasets */
-	data _null_;
-	set test;
-	call execute( cat( "proc import datafile='",trim(File_Name),"' out= ",scan(scan(File_Name,-1,'/'),1,'.') ," dbms=&filext;run;"));
-	run;
-
-%mend ImportFile;	
-		
-
-/*Call Macro to read directory and import the CSV/XLS files as required*/
-		
-%ImportFile(pavani.test1,E:\Pavani_test,csv);
-%ImportFile(pavani.test2,E:\Pavani_test,xls);
+%ReadFiles(/home/u38072055/pvn2);   
 
 
+libname outp '/home/u38072055/out1';               /*Output directory*/
 
-
+%macro ImportFile(directory,fname);                       /*Define Macro*/           
+proc import out=outp.file_import                  /*Output SAS dataset*/
+		datafile="&directory/&fname"    /* Import file location*/
+		dbms=tab replace;
+run;
+%mend ImportFile;
