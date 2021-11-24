@@ -1,64 +1,60 @@
-/*EXERCISE4*/
+libname outp '/home/u38072055/out1';               /*Output directory*/
 
-%macro ImportFile(dsn,fildir,filnm,filext);
 
-	%if %sysfunc(exist(&dsn))=0 %then %do;
+%macro ReadFiles(directory);                       /*Define Macro - ReadFiles*/
+data outp.file_list5(keep=fname);  
+	rc=filename("mydir","&directory");            /*Input directory*/
+	did=dopen("mydir");                            /*Directory ID*/
+	if did>0 then
+		do i=1 to dnum(did);                       /*Loops from 1 to the number of items in directory*/
+			fname=dread(did,i);                    /* Reads the name of the directory member*/
+			output;
+		end;
+	rc=dclose(did);                                /*Closes the directory*/
+run;
 
-/* Create a table */
-		proc sql;
-		create table &dsn 
-				( File_Name char(1000) format=$1000. 
-				);
-		quit;
+proc print data=outp.file_list5 obs="fnum";                    /* Prints SAS dataset to directory OUTP*/
+run;
 
-   %end;
+%ImportFile;
 
-/*Iterate through all files in directory to be imported*/
+%mend ReadFiles;
 
-%do i = 1 to %sysfunc(dnum(&dir_open)); 
 
-/*Call Macro 'ReadFiles' */
+%macro ImportFile;                       /*Define Macro*/           
 
-%ReadFiles(E:\Pavani_test);
-	
+proc sql noprint;
+select distinct fname into :fs separated by '/' from outp.file_list5;
+quit;
 
-/* Write file names to output dataset dsn */  		
-	insert into &dsn
-		set File_Name= "&directory/&filnm";
-	quit;
+%put "count is " %eval(%sysfunc(count(&fs,/))+1);
 
-	%end;
+%do i=1 %to %eval(%sysfunc(count(&fs,/))+1);
+		%let fname=%scan(&fs,&i.,'/');
+		proc import out=outp.%upcase(%scan(&fname.,1,'.'))                /*Output SAS dataset*/
+		datafile="/home/u38072055/pvn1/&fname"    /* Import file location*/
+		dbms=xls replace;
+		run;
+		
+	%let err=&syserr;
+	%put "Error code is : " &err;
+
+		data imphist_&i.;
+		filenm="&fname.";
+		if %sysevalf(&err)=0 then status="SUCCESS";
+		else status="FAIL";
+		output;
+        run;
+        
+        proc print data=imphist_&i.;
+        run;
 
 %end;
 
-/*Close directory */
-	%let rc=%sysfunc(dclose(&dir_open));
-	%let rc=%sysfunc(filename(fildir));
 
-/* Load your files to SAS Datasets */
-	data _null_;
-	set test;
-	call execute( cat( "proc import datafile='",trim(File_Name),"' out= ",scan(scan(File_Name,-1,'/'),1,'.') ," dbms=&filext;run;"));
-	run;
-
-/* To check the file status*/
-data file_status;
-%let err=&syserr;
-%put &err;
-if %sysevalf(&err)=0 then status='successful';
-else status='failed';
-output;
+proc append base=outp.imp_hist data=imphist_&i. force;
 run;
 
+%mend ImportFile;
 
-%mend ImportFile;	
-		
-
-/*Call Macro to read directory and import the CSV/XLS files as required*/
-		
-%ImportFile(pavani.test1,E:\Pavani_test,csv);
-%ImportFile(pavani.test2,E:\Pavani_test,xls);
-
-
-
-
+%ReadFiles(/home/u38072055/pvn1); 
