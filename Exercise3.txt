@@ -1,32 +1,42 @@
 libname outp '/home/u38072055/out1';               /*Output directory*/
 
-%macro ReadFiles(directory);                  /*Define Macro - ReadFiles*/
-data outp.file_list(keep=fname);  
+
+%macro ReadFiles(directory);                       /*Define Macro - ReadFiles*/
+data outp.file_list5(keep=fname);  
 	rc=filename("mydir","&directory");            /*Input directory*/
 	did=dopen("mydir");                            /*Directory ID*/
 	if did>0 then
 		do i=1 to dnum(did);                       /*Loops from 1 to the number of items in directory*/
-			fname=dread(did,i);                  /* Reads the name of the directory member*/
-			put "fname = " fname;
+			fname=dread(did,i);                    /* Reads the name of the directory member*/
 			output;
 		end;
 	rc=dclose(did);                                /*Closes the directory*/
 run;
 
-proc print data=outp.file_list; 
+proc print data=outp.file_list5 obs="fnum";                    /* Prints SAS dataset to directory OUTP*/
 run;
-
-%ImportFile(&directory,&fname);
 %mend ReadFiles;
 
-%ReadFiles(/home/u38072055/pvn2);   
+
+%macro ImportFile;                       /*Define Macro*/           
+
+proc sql noprint;
+select distinct fname into :fs separated by '/' from outp.file_list5;
+quit;
+
+%put "count is " %eval(%sysfunc(count(&fs,/))+1);
+
+%do i=1 %to %eval(%sysfunc(count(&fs,/))+1);
+		%let fname=%scan(&fs,&i.,'/');
+		proc import out=outp.%upcase(%scan(&fname.,1,'.'))                /*Output SAS dataset*/
+		datafile="/home/u38072055/pvn1/&fname"    /* Import file location*/
+		dbms=xls replace;
+		run;
+%end;
 
 
-libname outp '/home/u38072055/out1';               /*Output directory*/
-
-%macro ImportFile(directory,fname);                       /*Define Macro*/           
-proc import out=outp.file_import                  /*Output SAS dataset*/
-		datafile="&directory/&fname"    /* Import file location*/
-		dbms=tab replace;
-run;
 %mend ImportFile;
+
+%ReadFiles(/home/u38072055/pvn1); 
+%ImportFile;
+
