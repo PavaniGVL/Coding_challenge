@@ -15,10 +15,13 @@ run;
 
 proc print data=outp.file_list5 obs="fnum";                    /* Prints SAS dataset to directory OUTP*/
 run;
+
+%ImportFile;                                                   /*Call the IMportFile MACRO*/
+
 %mend ReadFiles;
 
 
-%macro ImportFile;                       /*Define Macro*/           
+%macro ImportFile;                                                   /*Define Macro*/           
 
 proc sql noprint;
 select distinct fname into :fs separated by '/' from outp.file_list5;
@@ -29,7 +32,7 @@ quit;
 %do i=1 %to %eval(%sysfunc(count(&fs,/))+1);
 		%let fname=%scan(&fs,&i.,'/');
 		proc import out=outp.%upcase(%scan(&fname.,1,'.'))                /*Output SAS dataset*/
-		datafile="/home/u38072055/pvn1/&fname"    /* Import file location*/
+		datafile="/home/u38072055/pvn1/&fname"                           /* Import file location*/
 		dbms=xls replace;
 		run;
 %end;
@@ -37,6 +40,4 @@ quit;
 
 %mend ImportFile;
 
-%ReadFiles(/home/u38072055/pvn1); 
-%ImportFile;
-
+%ReadFiles(/home/u38072055/pvn1);                                /*Call the Readfiles macro*/
